@@ -1,0 +1,8 @@
+deploy:
+  compose: docker-compose.yaml
+
+dev:
+  api:
+    workdir: /usr/src/app
+    sync:
+      - .:/usr/src/app

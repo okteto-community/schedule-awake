@@ -1,0 +1,32 @@
+version: "3"
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    environment:
+      - PGUSER=$SCHEDULES_POSTGRES_USER
+      - PGPASSWORD=$SCHEDULES_POSTGRES_PASSWORD
+      - PGDATABASE=schedule_db
+      - OKTETO_TOKEN=$SCHEDULES_OKTETO_ADMIN_TOKEN
+      - OKTETO_URL=$SCHEDULES_OKTETO_CONTEXT
+
+  postgres:
+    image: postgres:17.4
+    ports:
+      - 5432
+    environment:
+      - POSTGRES_USER=$SCHEDULES_POSTGRES_USER
+      - POSTGRES_PASSWORD=$SCHEDULES_POSTGRES_PASSWORD
+      - POSTGRES_DB=schedule_db
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:
+    driver_opts:
+      size: 1Gi
