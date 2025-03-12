@@ -32,3 +32,18 @@ export NAMESPACE=<<your-namespace>>
 ```bash
 okteto deploy -n ${NAMESPACE} --var SCHEDULES_OKTETO_ADMIN_TOKEN="${SCHEDULES_OKTETO_ADMIN_TOKEN}" --var SCHEDULES_OKTETO_URL="${SCHEDULES_OKTETO_URL}" --var SCHEDULES_POSTGRES_PASSWORD="${SCHEDULES_POSTGRES_PASSWORD}"
 ```
+
+## Using the application
+
+Click on the endpoint of the wakeup service to access the UI. The web UI allows you to add a  wake up schedule for any namespace on your Okteto instance. A namespace may only have a single schedule at the same time.  
+
+The schedule is defined using the crontab syntax. This allows you to configure recurring wake ups. All times are UTC. If you are not familiar with crontab, [we recommend you check this website.](https://crontab.guru/)
+
+For example, to wake up the namespace "demo" every working day at 9AM UTC, you would define it as follows in the web UI:
+
+```
+Namespace: demo
+Schedule:  0 9 * * 1-5
+```
+
+
