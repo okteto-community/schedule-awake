@@ -4,6 +4,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    labels:
+      dev.okteto.com/private: "true"
     ports:
       - "8080:8080"
     depends_on:
@@ -13,7 +15,7 @@ services:
       - PGPASSWORD=$SCHEDULES_POSTGRES_PASSWORD
       - PGDATABASE=schedule_db
       - OKTETO_TOKEN=$SCHEDULES_OKTETO_ADMIN_TOKEN
-      - OKTETO_URL=$SCHEDULES_OKTETO_CONTEXT
+      - OKTETO_URL=$SCHEDULES_OKTETO_URL
 
   postgres:
     image: postgres:17.4

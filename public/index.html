@@ -1,5 +1,12 @@
 <html>
     <head>
+        <script
+            src="https://unpkg.com/cronstrue@latest/dist/cronstrue.min.js"
+            async
+        ></script>
+        <script>
+            var cronstrue = window.cronstrue;
+        </script>
         <style>
             .schedule-container {
                 margin: 20px;
@@ -156,7 +163,8 @@
                             details.className = "schedule-details";
                             details.innerHTML = `
                 <strong>Namespace:</strong> ${schedule.namespace}<br>
-                <strong>Schedule:</strong> ${schedule.schedule}
+                <strong>Schedule:</strong> ${schedule.schedule}<br>
+                <i>${cronstrue.toString(schedule.schedule)}</i>
               `;
 
                             const removeButton =

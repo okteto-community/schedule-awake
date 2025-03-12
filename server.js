@@ -4,7 +4,7 @@ const { Pool } = require("pg");
 const bodyParser = require("body-parser");
 const path = require("path");
 const { exec } = require("child_process");
-var cron = require("node-cron");
+const cron = require("node-cron");
 
 // Initialize Express app
 const app = express();
@@ -25,7 +25,7 @@ const pool = new Pool({
 // Function to wake up a namespace
 function scheduleWakeupNamespace(schedule) {
   if (!schedule.namespace || !schedule.schedule) {
-    throw new Error("Namespace and schedule must be provided");
+    throw new Error("namespace and schedule must be provided");
   }
 
   try {
@@ -33,15 +33,13 @@ function scheduleWakeupNamespace(schedule) {
       schedule.schedule,
       function () {
         exec(
-          `/usr/local/bin/okteto namespace wake ${schedule.namespace}`,
+          `/usr/local/bin/okteto namespace wake ${schedule.namespace} --log-level=debug`,
           (error, stdout, stderr) => {
             if (error) {
-              console.error(`Error executing command: ${error}`);
+              console.error(`error executing command: ${error}`);
               return;
             }
-            if (stderr) {
-              console.error(`Command stderr: ${stderr}`);
-            }
+
             console.log(`namespace ${schedule.namespace} is awakening`);
           },
         );
@@ -50,10 +48,10 @@ function scheduleWakeupNamespace(schedule) {
     );
 
     console.log(
-      `Scheduled namespace ${schedule.namespace} with schedule: ${schedule.schedule}`,
+      `saved namespace ${schedule.namespace} with schedule: ${schedule.schedule}`,
     );
   } catch (error) {
-    console.error(`Error waking up namespace ${schedule.namespace}:`, error);
+    console.error(`error waking up namespace ${schedule.namespace}:`, error);
   }
 }
 
@@ -62,23 +60,28 @@ function deleteTaskIfExists(namespace) {
   console.log(`Deleted scheduled awake for namespace: ${namespace}`);
 }
 
+async function setOktetoContext() {
+  return new Promise(function (resolve, reject) {
+    exec(
+      `/usr/local/bin/okteto context use --token ${process.env.OKTETO_TOKEN} ${process.env.OKTETO_URL}`,
+      (error, stdout, stderr) => {
+        if (error) {
+          reject(error);
+        }
+        if (stderr) {
+          reject(stderr);
+        }
+
+        console.log(`okteto context initialized`);
+        resolve();
+      },
+    );
+  });
+}
+
 // Initialize database
 async function initializeDatabase() {
-  exec(
-    `/usr/local/bin/okteto context use --token ${process.env.OKTETO_TOKEN} ${process.env.OKTETO_URL}`,
-    (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error executing command: ${error}`);
-        return;
-      }
-      if (stderr) {
-        console.error(`Command stderr: ${stderr}`);
-        return;
-      }
-
-      console.log(`Okteto initialized`);
-    },
-  );
+  await setOktetoContext();
 
   try {
     await pool.query(`
@@ -90,17 +93,17 @@ async function initializeDatabase() {
     `);
 
     const result = await pool.query("SELECT * FROM schedules");
-    for (const schedule of result.rows) {
-      scheduleWakeupNamespace(schedule);
+    if (result) {
+      for (const schedule of result.rows) {
+        scheduleWakeupNamespace(schedule);
+      }
     }
 
-    console.log("Database initialized successfully");
+    console.log("database initialized");
   } catch (error) {
-    console.error("Error initializing database:", error);
+    throw new Error("error initializing database:", error);
   }
 }
-
-initializeDatabase();
 
 // API Endpoint 1: Create a new schedule
 app.post("/api/schedules", async (req, res) => {
@@ -194,8 +197,19 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
+// Check for required environment variables
+if (!process.env.OKTETO_URL || !process.env.OKTETO_TOKEN) {
+  console.error(
+    "error: OKTETO_URL and OKTETO_TOKEN environment variables must be defined",
+  );
+  process.exit(1);
+}
+
 // Start the server
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+
+initializeDatabase().then(() => {
+  app.listen(PORT, () => {
+    console.log(`server running on port ${PORT}`);
+  });
 });
