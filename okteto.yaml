@@ -2,7 +2,7 @@ deploy:
   compose: docker-compose.yaml
 
 dev:
-  api:
+  wakeup:
     command: bash
     workdir: /usr/src/app
     sync:
