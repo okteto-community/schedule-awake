@@ -192,6 +192,39 @@ app.delete("/api/schedules/:id", async (req, res) => {
   }
 });
 
+
+// API Endpoint 4: Get cluster namespaces
+const API_PATH = "/api/v0/namespaces";
+const DEV_NAMESPACE_TYPE = "development";
+const axios = require("axios");
+
+app.get("/api/namespaces", async (req, res) => {
+  try {
+      const namespacesURL = `${process.env.OKTETO_URL}${API_PATH}?type=${DEV_NAMESPACE_TYPE}`;
+      console.log(`Fetching namespaces from: ${namespacesURL}`);
+
+      const response = await axios.get(namespacesURL, {
+          headers: {
+              Authorization: `Bearer ${process.env.OKTETO_TOKEN}`
+          },
+          timeout: 10000 // Timeout 10 segs
+      });
+
+      if (response.status !== 200) {
+          console.error(`Error fetching namespaces. Status: ${response.status}`);
+          return res.status(response.status).json({ error: "Failed to fetch namespaces" });
+      }
+
+      const namespaceNames = response.data.map(ns => ns.name);
+
+      res.json(namespaceNames);
+  } catch (error) {
+      console.error("Error fetching namespaces:", error.message);
+      res.status(500).json({ error: "Failed to fetch namespaces" });
+  }
+});
+
+
 // Serve the frontend for any other route
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));

@@ -220,12 +220,9 @@
                 <h3>Add New Schedule</h3>
                 <div class="form-group">
                     <label for="scheduleName">Namespace:</label>
-                    <input
-                        type="text"
-                        id="scheduleName"
-                        required
-                        placeholder="Enter namespace name"
-                    />
+                    <select id="scheduleName" required>
+                        <option value="">Select namespace</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="scheduleValue">Schedule:</label>
@@ -238,6 +235,22 @@
                 </div>
                 <button type="submit" class="submit-btn">Add Schedule</button>
             </form>
+            <script>
+                document.addEventListener("DOMContentLoaded", () => {
+                    fetch("/api/namespaces")
+                        .then(response => response.json())
+                        .then(data => {
+                            const select = document.getElementById("scheduleName");
+                            data.forEach(ns => {
+                                const option = document.createElement("option");
+                                option.value = ns;
+                                option.textContent = ns;
+                                select.appendChild(option);
+                            });
+                        })
+                        .catch(error => console.error("Error fetching namespaces:", error));
+                });
+            </script>
 
             <div class="loading">Loading schedules...</div>
             <ul class="schedule-list"></ul>
