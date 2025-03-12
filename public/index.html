@@ -79,6 +79,7 @@
 
         <script>
             document.addEventListener("DOMContentLoaded", () => {
+                fetchNamespaces();
                 fetchSchedules();
                 setupFormSubmission();
             });
@@ -132,6 +133,21 @@
                         alert(error.message);
                         console.error("Error submitting schedule:", error);
                     });
+            }
+
+            function fetchNamespaces () {
+                fetch("/api/namespaces")
+                    .then(response => response.json())
+                    .then(data => {
+                        const select = document.getElementById("scheduleName");
+                        data.forEach(ns => {
+                            const option = document.createElement("option");
+                            option.value = ns;
+                            option.textContent = ns;
+                            select.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error("Error fetching namespaces:", error));
             }
 
             function fetchSchedules() {
@@ -219,13 +235,9 @@
             <form id="scheduleForm" class="schedule-form">
                 <h3>Add New Schedule</h3>
                 <div class="form-group">
-                    <label for="scheduleName">Namespace:</label>
-                    <input
-                        type="text"
-                        id="scheduleName"
-                        required
-                        placeholder="Enter namespace name"
-                    />
+                    <label for="scheduleName">Namespaces:</label>
+                    <select id="scheduleName" multiple required>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="scheduleValue">Schedule:</label>
