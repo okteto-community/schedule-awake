@@ -1,0 +1,22 @@
+{
+  "name": "wakeup-on-schedule",
+  "version": "1.0.0",
+  "description": "wake namespaces on a schedule",
+  "main": "server.js",
+  "scripts": {
+    "start": "nodemon server.js",
+    "clean": "node clean.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "cron": "^4.1.0",
+    "express": "^4.21.2",
+    "node-cron": "^3.0.3",
+    "nodemon": "^3.1.9",
+    "pg": "^8.14.0",
+    "uuid": "^11.1.0"
+  }
+}

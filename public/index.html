@@ -1,0 +1,246 @@
+<html>
+    <head>
+        <script
+            src="https://unpkg.com/cronstrue@latest/dist/cronstrue.min.js"
+            async
+        ></script>
+        <script>
+            var cronstrue = window.cronstrue;
+        </script>
+        <style>
+            .schedule-container {
+                margin: 20px;
+                font-family: Arial, sans-serif;
+            }
+            .schedule-list {
+                list-style: none;
+                padding: 0;
+            }
+            .schedule-item {
+                background-color: #f5f5f5;
+                border-radius: 4px;
+                padding: 12px;
+                margin-bottom: 8px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .schedule-details {
+                flex-grow: 1;
+            }
+            .remove-btn {
+                background-color: #00d1ca;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                padding: 6px 12px;
+                cursor: pointer;
+            }
+            .remove-btn:hover {
+                background-color: #1ca8b8;
+            }
+            .loading {
+                font-style: italic;
+                color: #666;
+            }
+            .schedule-form {
+                background-color: #f9f9f9;
+                border-radius: 4px;
+                padding: 15px;
+                margin-bottom: 20px;
+            }
+            .form-group {
+                margin-bottom: 12px;
+            }
+            .form-group label {
+                display: block;
+                margin-bottom: 5px;
+                font-weight: bold;
+            }
+            .form-group input {
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                box-sizing: border-box;
+            }
+            .submit-btn {
+                background-color: #00d1ca;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                padding: 8px 16px;
+                cursor: pointer;
+            }
+            .submit-btn:hover {
+                background-color: #1ca8b8;
+            }
+        </style>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                fetchSchedules();
+                setupFormSubmission();
+            });
+
+            function setupFormSubmission() {
+                const scheduleForm = document.getElementById("scheduleForm");
+
+                scheduleForm.addEventListener("submit", function (event) {
+                    event.preventDefault();
+
+                    const nameInput = document.getElementById("scheduleName");
+                    const scheduleInput =
+                        document.getElementById("scheduleValue");
+
+                    const scheduleData = {
+                        namespace: nameInput.value,
+                        schedule: scheduleInput.value,
+                    };
+
+                    submitSchedule(scheduleData);
+
+                    // Clear the form
+                    nameInput.value = "";
+                    scheduleInput.value = "";
+                });
+            }
+
+            function submitSchedule(scheduleData) {
+                fetch("/api/schedules", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(scheduleData),
+                })
+                    .then((response) => {
+                        if (!response.ok) {
+                            return response.json().then((errorData) => {
+                                throw new Error(
+                                    errorData.error ||
+                                        "Failed to submit schedule",
+                                );
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(() => {
+                        fetchSchedules(); // Refresh the list
+                    })
+                    .catch((error) => {
+                        alert(error.message);
+                        console.error("Error submitting schedule:", error);
+                    });
+            }
+
+            function fetchSchedules() {
+                const scheduleList = document.querySelector(".schedule-list");
+                const loadingElement = document.querySelector(".loading");
+
+                fetch("/api/schedules")
+                    .then((response) => {
+                        if (!response.ok) {
+                            throw new Error("Failed to fetch schedules");
+                        }
+                        return response.json();
+                    })
+                    .then((schedules) => {
+                        loadingElement.style.display = "none";
+
+                        if (schedules.length === 0) {
+                            scheduleList.innerHTML =
+                                "<p>No schedules found.</p>";
+                            return;
+                        }
+
+                        scheduleList.innerHTML = "";
+                        schedules.forEach((schedule) => {
+                            const listItem = document.createElement("li");
+                            listItem.className = "schedule-item";
+
+                            const details = document.createElement("div");
+                            details.className = "schedule-details";
+                            details.innerHTML = `
+                <strong>Namespace:</strong> ${schedule.namespace}<br>
+                <strong>Schedule:</strong> ${schedule.schedule}<br>
+                <i>${cronstrue.toString(schedule.schedule)}</i>
+              `;
+
+                            const removeButton =
+                                document.createElement("button");
+                            removeButton.className = "remove-btn";
+                            removeButton.textContent = "Remove";
+                            removeButton.onclick = () =>
+                                removeSchedule(schedule.id, schedule.namespace);
+
+                            listItem.appendChild(details);
+                            listItem.appendChild(removeButton);
+                            scheduleList.appendChild(listItem);
+                        });
+                    })
+                    .catch((error) => {
+                        loadingElement.textContent =
+                            "Error loading schedules: " + error.message;
+                        console.error("Error fetching schedules:", error);
+                    });
+            }
+
+            function removeSchedule(id, namespace) {
+                if (
+                    confirm(
+                        `Are you sure you want to remove schedule for namespace ${namespace}?`,
+                    )
+                ) {
+                    fetch(`/api/schedules/${id}`, {
+                        method: "DELETE",
+                    })
+                        .then((response) => {
+                            if (!response.ok) {
+                                throw new Error("Failed to remove schedule");
+                            }
+                            return response.json();
+                        })
+                        .then(() => {
+                            fetchSchedules(); // Refresh the list
+                        })
+                        .catch((error) => {
+                            alert("Error removing schedule: " + error.message);
+                            console.error("Error removing schedule:", error);
+                        });
+                }
+            }
+        </script>
+    </head>
+    <body>
+        <div id="scheduleList" class="schedule-container">
+            <h2>Schedules</h2>
+
+            <form id="scheduleForm" class="schedule-form">
+                <h3>Add New Schedule</h3>
+                <div class="form-group">
+                    <label for="scheduleName">Namespace:</label>
+                    <input
+                        type="text"
+                        id="scheduleName"
+                        required
+                        placeholder="Enter namespace name"
+                    />
+                </div>
+                <div class="form-group">
+                    <label for="scheduleValue">Schedule:</label>
+                    <input
+                        type="text"
+                        id="scheduleValue"
+                        required
+                        placeholder="Enter schedule value using the cron syntax"
+                    />
+                </div>
+                <button type="submit" class="submit-btn">Add Schedule</button>
+            </form>
+
+            <div class="loading">Loading schedules...</div>
+            <ul class="schedule-list"></ul>
+        </div>
+    </body>
+</html>

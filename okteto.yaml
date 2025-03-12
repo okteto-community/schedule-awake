@@ -1,0 +1,9 @@
+deploy:
+  compose: docker-compose.yaml
+
+dev:
+  wakeup:
+    command: bash
+    workdir: /usr/src/app
+    sync:
+      - .:/usr/src/app
