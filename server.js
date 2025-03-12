@@ -48,7 +48,7 @@ function scheduleWakeupNamespace(schedule) {
     );
 
     console.log(
-      `saved namespace ${schedule.namespace} with schedule: ${schedule.schedule}`,
+      `scheduled namespace ${schedule.namespace} with schedule: ${schedule.schedule}`,
     );
   } catch (error) {
     console.error(`error waking up namespace ${schedule.namespace}:`, error);
@@ -57,7 +57,7 @@ function scheduleWakeupNamespace(schedule) {
 
 function deleteTaskIfExists(namespace) {
   cron.getTasks().delete(namespace);
-  console.log(`Deleted scheduled awake for namespace: ${namespace}`);
+  console.log(`deleted scheduled awake for namespace: ${namespace}`);
 }
 
 async function setOktetoContext() {
@@ -210,6 +210,6 @@ const PORT = process.env.PORT || 8080;
 
 initializeDatabase().then(() => {
   app.listen(PORT, () => {
-    console.log(`server running on port ${PORT}`);
+    console.log(`server ready ⏰`);
   });
 });
