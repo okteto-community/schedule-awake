@@ -79,6 +79,21 @@
 
         <script>
             document.addEventListener("DOMContentLoaded", () => {
+                fetch("/api/namespaces")
+                    .then(response => response.json())
+                    .then(data => {
+                        const select = document.getElementById("scheduleName");
+                        data.forEach(ns => {
+                            const option = document.createElement("option");
+                            option.value = ns;
+                            option.textContent = ns;
+                            select.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error("Error fetching namespaces:", error));
+            });
+            
+            document.addEventListener("DOMContentLoaded", () => {
                 fetchSchedules();
                 setupFormSubmission();
             });
@@ -235,22 +250,6 @@
                 </div>
                 <button type="submit" class="submit-btn">Add Schedule</button>
             </form>
-            <script>
-                document.addEventListener("DOMContentLoaded", () => {
-                    fetch("/api/namespaces")
-                        .then(response => response.json())
-                        .then(data => {
-                            const select = document.getElementById("scheduleName");
-                            data.forEach(ns => {
-                                const option = document.createElement("option");
-                                option.value = ns;
-                                option.textContent = ns;
-                                select.appendChild(option);
-                            });
-                        })
-                        .catch(error => console.error("Error fetching namespaces:", error));
-                });
-            </script>
 
             <div class="loading">Loading schedules...</div>
             <ul class="schedule-list"></ul>
