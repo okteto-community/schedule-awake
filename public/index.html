@@ -22,7 +22,7 @@
                 flex-grow: 1;
             }
             .remove-btn {
-                background-color: #ff4d4d;
+                background-color: #00d1ca;
                 color: white;
                 border: none;
                 border-radius: 4px;
@@ -30,7 +30,7 @@
                 cursor: pointer;
             }
             .remove-btn:hover {
-                background-color: #e60000;
+                background-color: #1ca8b8;
             }
             .loading {
                 font-style: italic;
@@ -58,7 +58,7 @@
                 box-sizing: border-box;
             }
             .submit-btn {
-                background-color: #4caf50;
+                background-color: #00d1ca;
                 color: white;
                 border: none;
                 border-radius: 4px;
@@ -66,7 +66,7 @@
                 cursor: pointer;
             }
             .submit-btn:hover {
-                background-color: #45a049;
+                background-color: #1ca8b8;
             }
         </style>
 
@@ -109,10 +109,12 @@
                 })
                     .then((response) => {
                         if (!response.ok) {
-                            throw new Error(
-                                "Failed to submit schedule: ",
-                                response.error,
-                            );
+                            return response.json().then((errorData) => {
+                                throw new Error(
+                                    errorData.error ||
+                                        "Failed to submit schedule",
+                                );
+                            });
                         }
                         return response.json();
                     })

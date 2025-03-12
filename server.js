@@ -29,21 +29,25 @@ function scheduleWakeupNamespace(schedule) {
   }
 
   try {
-    cron.schedule(schedule.schedule, function () {
-      exec(
-        `/usr/local/bin/okteto namespace wake ${schedule.namespace}`,
-        (error, stdout, stderr) => {
-          if (error) {
-            console.error(`Error executing command: ${error}`);
-            return;
-          }
-          if (stderr) {
-            console.error(`Command stderr: ${stderr}`);
-          }
-          console.log(`namespace ${schedule.namespace} is awakening`);
-        },
-      );
-    });
+    cron.schedule(
+      schedule.schedule,
+      function () {
+        exec(
+          `/usr/local/bin/okteto namespace wake ${schedule.namespace}`,
+          (error, stdout, stderr) => {
+            if (error) {
+              console.error(`Error executing command: ${error}`);
+              return;
+            }
+            if (stderr) {
+              console.error(`Command stderr: ${stderr}`);
+            }
+            console.log(`namespace ${schedule.namespace} is awakening`);
+          },
+        );
+      },
+      { name: schedule.namespace },
+    );
 
     console.log(
       `Scheduled namespace ${schedule.namespace} with schedule: ${schedule.schedule}`,
@@ -51,6 +55,11 @@ function scheduleWakeupNamespace(schedule) {
   } catch (error) {
     console.error(`Error waking up namespace ${schedule.namespace}:`, error);
   }
+}
+
+function deleteTaskIfExists(namespace) {
+  cron.getTasks().delete(namespace);
+  console.log(`Deleted scheduled awake for namespace: ${namespace}`);
 }
 
 // Initialize database
@@ -75,7 +84,7 @@ async function initializeDatabase() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS schedules (
         id UUID PRIMARY KEY,
-        namespace TEXT NOT NULL,
+        namespace TEXT NOT NULL UNIQUE,
         schedule TEXT NOT NULL
       );
     `);
@@ -125,6 +134,13 @@ app.post("/api/schedules", async (req, res) => {
 
     res.status(201).json({ id, namespace, schedule });
   } catch (error) {
+    // Check for unique constraint violation (duplicate namespace)
+    if (error.code === "23505") {
+      // PostgreSQL unique violation code
+      return res.status(400).json({
+        error: "A schedule for this namespace already exists",
+      });
+    }
     console.error("Error creating schedule:", error);
     res.status(500).json({ error: "Internal server error" });
   }
@@ -162,9 +178,10 @@ app.delete("/api/schedules/:id", async (req, res) => {
       return res.status(404).json({ error: "Schedule not found" });
     }
 
+    deleteTaskIfExists(result.rows[0].namespace);
+
     res.status(200).json({
       message: "Schedule deleted successfully",
-      deletedSchedule: result.rows[0],
     });
   } catch (error) {
     console.error("Error deleting schedule:", error);

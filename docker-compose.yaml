@@ -9,7 +9,7 @@ services:
     depends_on:
       - postgres
     environment:
-      - PGUSER=$SCHEDULES_POSTGRES_USER
+      - PGUSER=okteto
       - PGPASSWORD=$SCHEDULES_POSTGRES_PASSWORD
       - PGDATABASE=schedule_db
       - OKTETO_TOKEN=$SCHEDULES_OKTETO_ADMIN_TOKEN
@@ -20,7 +20,7 @@ services:
     ports:
       - 5432
     environment:
-      - POSTGRES_USER=$SCHEDULES_POSTGRES_USER
+      - POSTGRES_USER=okteto
       - POSTGRES_PASSWORD=$SCHEDULES_POSTGRES_PASSWORD
       - POSTGRES_DB=schedule_db
     volumes:
