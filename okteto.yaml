@@ -7,3 +7,13 @@ dev:
     workdir: /usr/src/app
     sync:
       - .:/usr/src/app
+
+test:
+  api:
+    image: ${OKTETO_BUILD_WAKEUP_IMAGE:-wakeup}
+    context: .
+    commands:
+      - cd /usr/src/app
+      - npm install axios
+      - chmod +x run-test.sh
+      - ./run-test.sh
