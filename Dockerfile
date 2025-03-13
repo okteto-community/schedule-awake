@@ -14,7 +14,10 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
-# Copy all files
+# Copy all static files
+COPY public public
+
+# Copy the rest of the files
 COPY . .
 
 # Expose the port the app runs on
