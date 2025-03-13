@@ -6,7 +6,9 @@
   "scripts": {
     "start": "nodemon server.js",
     "clean": "node clean.js",
-    "test": "node test-inline.js"
+    "test": "jest",
+    "test:unit": "jest tests/*.test.js --testPathIgnorePatterns=integration",
+    "test:integration": "jest tests/health.integration.test.js"
   },
   "author": "",
   "license": "Apache-2.0",
@@ -20,6 +22,8 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "axios": "^1.8.3"
+    "axios": "^1.8.3",
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0"
   }
 }

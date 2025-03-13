@@ -149,6 +149,34 @@ app.post("/api/schedules", async (req, res) => {
   }
 });
 
+// API Endpoint: Health check
+app.get("/api/health", async (req, res) => {
+  try {
+    // Check database connection
+    const result = await pool.query("SELECT 1");
+    if (result.rows[0]['?column?'] === 1) {
+      res.status(200).json({ 
+        status: "healthy",
+        database: "connected",
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(500).json({ 
+        status: "unhealthy",
+        database: "error",
+        message: "Database query returned unexpected result"
+      });
+    }
+  } catch (error) {
+    console.error("Health check failed:", error);
+    res.status(500).json({ 
+      status: "unhealthy",
+      database: "disconnected",
+      error: error.message
+    });
+  }
+});
+
 // API Endpoint 2: Get all schedules
 app.get("/api/schedules", async (req, res) => {
   try {
@@ -217,5 +245,5 @@ if (require.main === module) {
   });
 }
 
-// Export for testing
+// Export the app for testing
 module.exports = app;

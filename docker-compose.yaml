@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     labels:
-      dev.okteto.com/private: "false"
+      dev.okteto.com/private: "true"
     ports:
       - "8080:8080"
     depends_on:
