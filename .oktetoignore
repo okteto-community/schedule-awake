@@ -5,5 +5,8 @@
 !docker-compose.yaml
 
 [test]
-// Sync tests folder only during tests
-tests
+// Sync tests folder and app code only during test
+!tests
+!server.js
+!package.json
+!package-lock.json
