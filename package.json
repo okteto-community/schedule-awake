@@ -8,7 +8,7 @@
     "clean": "node clean.js",
     "test": "jest",
     "test:unit": "jest tests/*.test.js --testPathIgnorePatterns=integration",
-    "test:integration": "jest tests/health.integration.test.js"
+    "test:integration": "jest tests/*.integration.test.js"
   },
   "author": "",
   "license": "Apache-2.0",

@@ -1,2 +1,9 @@
-node_modules
-README.md
+// Ignore all other files and folders
+**
+
+// Sync docker compose
+!docker-compose.yaml
+
+[test]
+// Sync tests folder only during tests
+tests

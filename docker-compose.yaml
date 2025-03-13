@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     labels:
-      dev.okteto.com/private: "true"
+      dev.okteto.com/private: ${SCHEDULES_PRIVATE_ENDPOINT}
     ports:
       - "8080:8080"
     depends_on:

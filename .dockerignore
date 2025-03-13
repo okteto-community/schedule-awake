@@ -1,2 +1,12 @@
+hacks
 node_modules
+tests
+.gitignore
+.oktetoignore
+.stignore
+docker-compose.yaml
+LICENSE
+okteto.yaml
 README.md
+
+
