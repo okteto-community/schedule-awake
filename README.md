@@ -19,6 +19,12 @@ export SCHEDULES_OKTETO_URL=https://okteto.example.com
 export SCHEDULES_POSTGRES_PASSWORD=<<your-password>>
 ```
 
+- [OPTIONAL] Set the endpoint to private, so that only members of the namespace can access it:
+
+```bash
+export SCHEDULES_PRIVATE_ENDPOINT=true
+```
+
 - Create a namespace, and, via the admin section, mark it as [Keep awake](https://www.okteto.com/docs/admin/dashboard/#namespaces)
 
 - Export the namespace name to a local variable:
@@ -30,7 +36,7 @@ export NAMESPACE=<<your-namespace>>
 - Run the following command to deploy the application
 
 ```bash
-okteto deploy -n ${NAMESPACE} --var SCHEDULES_OKTETO_ADMIN_TOKEN="${SCHEDULES_OKTETO_ADMIN_TOKEN}" --var SCHEDULES_OKTETO_URL="${SCHEDULES_OKTETO_URL}" --var SCHEDULES_POSTGRES_PASSWORD="${SCHEDULES_POSTGRES_PASSWORD}"
+okteto deploy -n ${NAMESPACE} --var SCHEDULES_OKTETO_ADMIN_TOKEN="${SCHEDULES_OKTETO_ADMIN_TOKEN}" --var SCHEDULES_OKTETO_URL="${SCHEDULES_OKTETO_URL}" --var SCHEDULES_POSTGRES_PASSWORD="${SCHEDULES_POSTGRES_PASSWORD}" --var SCHEDULES_PRIVATE_ENDPOINT="${SCHEDULES_PRIVATE_ENDPOINT}"
 ```
 
 ## Using the application

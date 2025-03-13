@@ -9,11 +9,21 @@ dev:
       - .:/usr/src/app
 
 test:
-  api:
-    image: ${OKTETO_BUILD_WAKEUP_IMAGE:-wakeup}
+  unit:
+    image: node:22
     context: .
+    caches:
+      - node_modules
     commands:
-      - cd /usr/src/app
-      - npm install axios
-      - chmod +x run-test.sh
-      - ./run-test.sh
+      - npm install
+      - API_URL=https://wakeup-${OKTETO_NAMESPACE}.${OKTETO_DOMAIN} npm run test:unit
+  
+  integration:
+    image: node:22
+    context: .
+    caches:
+      - node_modules
+    commands:
+      - npm install
+      - API_URL=http://wakeup.${OKTETO_NAMESPACE}:8080 npm run test:integration
+

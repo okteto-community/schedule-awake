@@ -1,2 +1,12 @@
-node_modules
-README.md
+// Ignore all other files and folders
+**
+
+// Sync docker compose
+!docker-compose.yaml
+
+[test]
+// Sync tests folder and app code only during test
+!tests
+!server.js
+!package.json
+!package-lock.json
