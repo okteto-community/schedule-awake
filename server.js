@@ -208,8 +208,14 @@ if (!process.env.OKTETO_URL || !process.env.OKTETO_TOKEN) {
 // Start the server
 const PORT = process.env.PORT || 8080;
 
-initializeDatabase().then(() => {
-  app.listen(PORT, () => {
-    console.log(`server ready ⏰`);
+// Only start the server if this file is run directly (not imported for testing)
+if (require.main === module) {
+  initializeDatabase().then(() => {
+    app.listen(PORT, () => {
+      console.log(`server ready ⏰`);
+    });
   });
-});
+}
+
+// Export for testing
+module.exports = app;
