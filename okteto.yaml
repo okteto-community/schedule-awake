@@ -3,7 +3,7 @@ deploy:
 
 dev:
   wakeup:
-    command: bash
+    command: nodemon server.js
     workdir: /usr/src/app
     sync:
       - .:/usr/src/app

@@ -27,6 +27,7 @@ function scheduleWakeupNamespace(schedule) {
   if (!schedule.namespace || !schedule.schedule) {
     throw new Error("namespace and schedule must be provided");
   }
+  now = new Date().toLocaleString();
 
   try {
     cron.schedule(
@@ -40,7 +41,8 @@ function scheduleWakeupNamespace(schedule) {
               return;
             }
 
-            console.log(`namespace ${schedule.namespace} is awakening`);
+            now = new Date().toLocaleString();
+            console.log(`[${now}] namespace ${schedule.namespace} is awakening`);
           },
         );
       },
@@ -48,7 +50,7 @@ function scheduleWakeupNamespace(schedule) {
     );
 
     console.log(
-      `scheduled namespace ${schedule.namespace} with schedule: ${schedule.schedule}`,
+      `[${now}] scheduled namespace ${schedule.namespace} with schedule: ${schedule.schedule}`,
     );
   } catch (error) {
     console.error(`error waking up namespace ${schedule.namespace}:`, error);
@@ -56,6 +58,16 @@ function scheduleWakeupNamespace(schedule) {
 }
 
 function deleteTaskIfExists(namespace) {
+  const task = cron.getTasks().get(namespace);
+
+  if (!task) {
+    console.log(`[ERROR] No task found for namespace: ${namespace}`);
+    console.log("Active tasks list:", Array.from(cron.getTasks().keys())); 
+    return;
+  }
+
+  task.stop();
+  
   cron.getTasks().delete(namespace);
   console.log(`deleted scheduled awake for namespace: ${namespace}`);
 }
@@ -87,15 +99,29 @@ async function initializeDatabase() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS schedules (
         id UUID PRIMARY KEY,
-        namespace TEXT NOT NULL UNIQUE,
-        schedule TEXT NOT NULL
+        schedule TEXT NOT NULL,
+        groupName TEXT NOT NULL UNIQUE
+      );
+    
+      CREATE TABLE IF NOT EXISTS scheduleNamespaces (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        schedule_id UUID NOT NULL,
+        namespace TEXT NOT NULL,
+        FOREIGN KEY (schedule_id) REFERENCES schedules(id) ON DELETE CASCADE
       );
     `);
 
-    const result = await pool.query("SELECT * FROM schedules");
+    const result = await pool.query(`
+      SELECT s.id, s.schedule, s.groupName, sn.namespace
+      FROM schedules s
+      INNER JOIN scheduleNamespaces sn ON s.id = sn.schedule_id
+      ORDER BY s.groupName, sn.namespace;
+    `);
+
     if (result) {
-      for (const schedule of result.rows) {
-        scheduleWakeupNamespace(schedule);
+      for (const scheduleNs of result.rows) {
+        console.log("Processing schedule:", scheduleNs);
+        scheduleWakeupNamespace(scheduleNs);
       }
     }
 
@@ -108,13 +134,13 @@ async function initializeDatabase() {
 // API Endpoint 1: Create a new schedule
 app.post("/api/schedules", async (req, res) => {
   try {
-    const { namespace, schedule } = req.body;
+    const { namespaces, schedule , groupName} = req.body;
 
     // Validate request body
-    if (!namespace || !schedule) {
+    if (!Array.isArray(namespaces) || namespaces.length === 0 || !schedule) {
       return res
         .status(400)
-        .json({ error: "Namespace and schedule are required" });
+        .json({ error: "At least one namespace and a schedule are required" });
     }
 
     // Validate cron expression
@@ -126,16 +152,32 @@ app.post("/api/schedules", async (req, res) => {
 
     // Generate UUID for new schedule
     const id = uuidv4();
-
-    // Insert schedule into database
     await pool.query(
-      "INSERT INTO schedules (id, namespace, schedule) VALUES ($1, $2, $3)",
-      [id, namespace, schedule],
+      "INSERT INTO schedules (id, schedule, groupName) VALUES ($1, $2, $3)",
+      [id, schedule, groupName],
     );
 
-    scheduleWakeupNamespace({ namespace: namespace, schedule: schedule });
+    let insertedNamespaces = [];
+    for(const namespace of namespaces){
 
-    res.status(201).json({ id, namespace, schedule });
+      // Insert schedule into database
+      await pool.query(
+        "INSERT INTO scheduleNamespaces (schedule_id, namespace) VALUES ($1, $2)",
+        [id, namespace],
+      );
+
+      scheduleWakeupNamespace({ namespace: namespace, schedule: schedule });
+      insertedNamespaces.push(namespace);
+
+    }
+
+    res.status(201).json({
+      id,
+      groupName,
+      schedule,
+      namespaces: insertedNamespaces
+    });
+
   } catch (error) {
     // Check for unique constraint violation (duplicate namespace)
     if (error.code === "23505") {
@@ -152,7 +194,7 @@ app.post("/api/schedules", async (req, res) => {
 // API Endpoint 2: Get all schedules
 app.get("/api/schedules", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM schedules");
+    const result = await pool.query("SELECT id, groupName, schedule FROM schedules");
     res.status(200).json(result.rows);
   } catch (error) {
     console.error("Error fetching schedules:", error);
@@ -170,6 +212,23 @@ app.delete("/api/schedules/:id", async (req, res) => {
       return res.status(400).json({ error: "Schedule ID is required" });
     }
 
+    const scheduleGrName = await pool.query(
+      "SELECT groupName FROM schedules WHERE id = $1",
+      [id]
+    );
+
+    const namespacesResult = await pool.query(
+      "SELECT namespace FROM scheduleNamespaces WHERE schedule_id = $1",
+      [id]
+    );
+    const namespaces = namespacesResult.rows.map(row => row.namespace);
+    console.log("Deleting schedule ", scheduleGrName.rows[0]);
+    console.log(" -> Namespaces associated:", namespacesResult.rows);
+
+    namespaces.forEach(namespace => {
+      deleteTaskIfExists(namespace);
+    });
+
     // Delete schedule from database
     const result = await pool.query(
       "DELETE FROM schedules WHERE id = $1 RETURNING *",
@@ -180,8 +239,6 @@ app.delete("/api/schedules/:id", async (req, res) => {
     if (result.rowCount === 0) {
       return res.status(404).json({ error: "Schedule not found" });
     }
-
-    deleteTaskIfExists(result.rows[0].namespace);
 
     res.status(200).json({
       message: "Schedule deleted successfully",

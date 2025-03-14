@@ -75,9 +75,31 @@
             .submit-btn:hover {
                 background-color: #1ca8b8;
             }
+            .namespace-table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            .namespace-table th, .namespace-table td {
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }
+            .pagination-controls {
+                margin-top: 10px;
+            }
+            .pagination-button {
+                margin-right: 5px;
+                padding: 5px 10px;
+            }
         </style>
 
         <script>
+            let namespaces = [];
+            let filteredNamespaces = [];
+            let selectedNamespaces = new Set();
+            let currentPage = 1;
+            const rowsPerPage = 10;
+            
             document.addEventListener("DOMContentLoaded", () => {
                 fetchNamespaces();
                 fetchSchedules();
@@ -90,20 +112,27 @@
                 scheduleForm.addEventListener("submit", function (event) {
                     event.preventDefault();
 
-                    const nameInput = document.getElementById("scheduleName");
+                    const selectedArray = Array.from(selectedNamespaces);                    
                     const scheduleInput =
                         document.getElementById("scheduleValue");
 
+                    const scheduleGroupName =
+                        document.getElementById("groupName");
+
                     const scheduleData = {
-                        namespace: nameInput.value,
+                        namespaces: selectedArray,
                         schedule: scheduleInput.value,
+                        groupName: scheduleGroupName.value,
                     };
 
                     submitSchedule(scheduleData);
 
                     // Clear the form
-                    nameInput.value = "";
+                    scheduleGroupName.value = "";
                     scheduleInput.value = "";
+                    document.getElementById("namespaceFilter").value = "";
+                    selectedNamespaces.clear();
+                    fetchNamespaces();
                 });
             }
 
@@ -135,19 +164,79 @@
                     });
             }
 
-            function fetchNamespaces () {
+            function fetchNamespaces() {
                 fetch("/api/namespaces")
                     .then(response => response.json())
                     .then(data => {
-                        const select = document.getElementById("scheduleName");
-                        data.forEach(ns => {
-                            const option = document.createElement("option");
-                            option.value = ns;
-                            option.textContent = ns;
-                            select.appendChild(option);
-                        });
+                        namespaces = data;
+                        updateFilteredNamespaces();
                     })
                     .catch(error => console.error("Error fetching namespaces:", error));
+            }
+
+            function updateFilteredNamespaces() {
+                const filterValue = document.getElementById("namespaceFilter").value.toLowerCase();
+                filteredNamespaces = namespaces.filter(ns => ns.toLowerCase().includes(filterValue));
+                currentPage = 1; // Reset to first page when filtering
+                displayNamespaces();
+            }
+
+            function displayNamespaces() {
+                const tableBody = document.querySelector("#namespaceTable tbody");
+                tableBody.innerHTML = "";
+
+                let start = (currentPage - 1) * rowsPerPage;
+                let end = start + rowsPerPage;
+                let paginatedNamespaces = filteredNamespaces.slice(start, end);
+
+                paginatedNamespaces.forEach(ns => {
+                    const row = document.createElement("tr");
+
+                    const cellCheckbox = document.createElement("td");
+                    const checkbox = document.createElement("input");
+                    checkbox.type = "checkbox";
+                    checkbox.value = ns;
+                    checkbox.name = "namespaces";
+                    checkbox.checked = selectedNamespaces.has(ns);
+                    checkbox.addEventListener("change", () => {
+                        if (checkbox.checked) {
+                            selectedNamespaces.add(ns);
+                        } else {
+                            selectedNamespaces.delete(ns);
+                        }
+                    });
+                    cellCheckbox.appendChild(checkbox);
+
+                    const cellNamespace = document.createElement("td");
+                    cellNamespace.textContent = ns;
+
+                    row.appendChild(cellCheckbox);
+                    row.appendChild(cellNamespace);
+                    tableBody.appendChild(row);
+                });
+
+                setupPagination(filteredNamespaces.length);
+            }
+
+            function setupPagination(totalItems) {
+                const paginationControls = document.getElementById("paginationControls");
+                paginationControls.innerHTML = "";
+
+                const totalPages = Math.ceil(totalItems / rowsPerPage);
+
+                for (let i = 1; i <= totalPages; i++) {
+                    const button = document.createElement("button");
+                    button.textContent = i;
+                    button.className = "pagination-button";
+                    if (i === currentPage) {
+                        button.disabled = true;
+                    }
+                    button.addEventListener("click", () => {
+                        currentPage = i;
+                        displayNamespaces();
+                    });
+                    paginationControls.appendChild(button);
+                }
             }
 
             function fetchSchedules() {
@@ -178,7 +267,7 @@
                             const details = document.createElement("div");
                             details.className = "schedule-details";
                             details.innerHTML = `
-                <strong>Namespace:</strong> ${schedule.namespace}<br>
+                <strong>Group Name:</strong> ${schedule.groupname}<br>
                 <strong>Schedule:</strong> ${schedule.schedule}<br>
                 <i>${cronstrue.toString(schedule.schedule)}</i>
               `;
@@ -235,9 +324,23 @@
             <form id="scheduleForm" class="schedule-form">
                 <h3>Add New Schedule</h3>
                 <div class="form-group">
-                    <label for="scheduleName">Namespaces:</label>
-                    <select id="scheduleName" multiple required>
-                    </select>
+                    <label>Filter Namespaces:</label>
+                    <input type="text" id="namespaceFilter" placeholder="Search namespace..." oninput="updateFilteredNamespaces()">
+                </div>
+                <div class="form-group">
+                    <label>Namespaces:</label>
+                    <table id="namespaceTable" class="namespace-table">
+                        <thead>
+                            <tr>
+                                <th>Select</th>
+                                <th>Namespace</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Namespaces will be dynamically inserted here -->
+                        </tbody>
+                    </table>
+                    <div id="paginationControls" class="pagination-controls"></div>
                 </div>
                 <div class="form-group">
                     <label for="scheduleValue">Schedule:</label>
@@ -246,6 +349,15 @@
                         id="scheduleValue"
                         required
                         placeholder="Enter schedule value using the cron syntax"
+                    />
+                </div>
+                <div class="form-group">
+                    <label for="groupName">Group Name:</label>
+                    <input
+                        type="text"
+                        id="groupName"
+                        required
+                        placeholder="Enter group name"
                     />
                 </div>
                 <button type="submit" class="submit-btn">Add Schedule</button>
